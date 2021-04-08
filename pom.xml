@@ -149,12 +149,13 @@
             </plugin>
         </plugins>
     </build>
-    
+    <!--
     <developers> 
         <develop>
             <name>SGT Shirley</name>
             <email>shirley.souza@eb.mil.com.br</email>
         </develop>
     </developers>
+    -->
 
 </project>
