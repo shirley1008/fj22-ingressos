@@ -1,55 +1,85 @@
-import java.util.List;
+package br.com.caelum.ingresso.controller;
+
+import java.util.*;
+
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+
 import br.com.caelum.ingresso.dao.FilmeDao;
 import br.com.caelum.ingresso.dao.SalaDao;
 import br.com.caelum.ingresso.dao.SessaoDao;
-import br.com.caelum.ingresso.model.Filme;
-import br.com.caelum.ingresso.model.Sala;
-import br.com.caelum.ingresso.model.Sessao;
+import br.com.caelum.ingresso.model.*;
 import br.com.caelum.ingresso.model.form.SessaoForm;
-import javax.validation.Valid;
+import br.com.caelum.ingresso.validacao.GerenciadorDeSessao;
+import br.com.caelum.ingresso.rest.OmdbClient;
 
-@Controller
-public class SessaoController	{
-    
-	@Autowired
-	private	SalaDao	salaDao;
 
-	@Autowired
-	private	FilmeDao	filmeDao;
+
+@Transactional
+@Controller // Anotação: configurar o código
+public class SessaoController {
 	
 	@Autowired
-	private	SessaoDao	sessaoDao;
+	private FilmeDao filmeDao;
 	
+	@Autowired
+	private SalaDao salaDao;
 	
-	//demais	métodos
-	@PostMapping(value	=	"/admin/sessao")
-	@Transactional
-	public	ModelAndView	salva(@Valid	SessaoForm	form, BindingResult	result) {
-	    if	(result.hasErrors())	return	form(form.getSalaId(),form);
-		Sessao	sessao	=	form.toSessao(salaDao,	filmeDao);
-		sessaoDao.save(sessao);
-		return	new	ModelAndView("redirect:/admin/sala/"	+	form.getSalaId()	+	"/sessoes");
+	@Autowired
+	private SessaoDao sessaoDao;
+	
+	@Autowired
+    private	OmdbClient	client;
+
+	@GetMapping("/admin/sessao")
+	public ModelAndView formularioNovaSessao(@RequestParam("salaId") Integer salaId) {
+		List<Filme> filmes = filmeDao.findAll();
+		Sala sala = salaDao.findOne(salaId);
+		
+		ModelAndView view = new ModelAndView("sessao/sessao");
+		view.addObject("filmes", filmes);
+		view.addObject("sala", sala);
+		
+		return view;
 	}
-
-    @GetMapping("/admin/sessao")
-	public	ModelAndView	form(@RequestParam("salaId")	Integer	salaId, SessaoForm form)	{
-		ModelAndView	modelAndView	=	new	ModelAndView("sessao/sessao");
-		modelAndView.addObject("sala",	salaDao.findOne(salaId));
-		modelAndView.addObject("filmes",	filmeDao.findAll());
-		modelAndView.addObject("form",	form);
-
-		return	modelAndView;
+	
+	@PostMapping("/admin/sessao")
+	public ModelAndView salvaSessao(@Valid SessaoForm sessaoForm, BindingResult bindingResult) {
+		if (bindingResult.hasErrors()) {
+			return formularioNovaSessao(sessaoForm.getSalaId());
+		}
+				
+		Sessao novaSessao = sessaoForm.toSessao(salaDao, filmeDao);
+		List<Sessao> sessoesExistentes = sessaoDao.buscaSessoesDaSala(novaSessao.getSala());
+		
+		GerenciadorDeSessao gerenciador = new GerenciadorDeSessao(sessoesExistentes);
+		if (gerenciador.cabe(novaSessao)) {
+			sessaoDao.save(novaSessao);
+			return new ModelAndView("redirect:/admin/sala/" + sessaoForm.getSalaId() + "/sessoes");
+		}
+		
+		return formularioNovaSessao(sessaoForm.getSalaId());
+	}
+	
+	@GetMapping("/sessao/{id}/lugares")
+	public	ModelAndView	lugaresNaSessao(@PathVariable("id")	Integer	sessaoId){
+      
+      ModelAndView	modelAndView	=	new	ModelAndView("sessao/lugares");
+      
+      Sessao	sessao	=	sessaoDao.findOne(sessaoId);
+      	
+      Optional<ImagemCapa>	imagemCapa	=	client.request(sessao.getFilme(),	ImagemCapa.class);
+      
+      modelAndView.addObject("sessao",	sessao);
+      
+      modelAndView.addObject("imagemCapa",	imagemCapa.orElse(new	ImagemCapa()));
+      
+      return	modelAndView;
+	}
 }
-}
-
-

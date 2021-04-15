@@ -26,6 +26,9 @@
 						<td>
 							<a onclick="excluir(${filme.id})" class="btn btn-danger">Excluir</a>
 						</td>
+						<td>
+							<a href="/filme/${filme.id}/detalhe" class="btn btn-info">Detalhar</a>
+						</td>
 					</tr>
 				</c:forEach>
 			</tbody>

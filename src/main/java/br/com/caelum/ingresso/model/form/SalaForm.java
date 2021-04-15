@@ -8,12 +8,15 @@ import org.hibernate.validator.constraints.NotBlank;
 
 import br.com.caelum.ingresso.model.Lugar;
 import br.com.caelum.ingresso.model.Sala;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class SalaForm {
     private Integer salaId;
 
     @NotBlank
     private String nome;
+    private	BigDecimal	preco	=	BigDecimal.ZERO;
 
     private List<Lugar> lugares = new ArrayList<>();
 
@@ -23,8 +26,18 @@ public class SalaForm {
     public SalaForm(Sala sala) {
         this.salaId = sala.getId();
         this.nome = sala.getNome();
+        this.preco = sala.getPreco();
         this.lugares = new ArrayList<>(sala.getLugares());
     }
+    
+     
+	public	BigDecimal	getPreco() {
+	    return	preco.setScale(2,	RoundingMode.HALF_UP);
+	}
+	
+	public	void	setPreco(BigDecimal	preco) {
+		this.preco	=	preco;
+	}
 
     public Integer getSalaId() {
         return salaId;
@@ -50,11 +63,12 @@ public class SalaForm {
         this.lugares = lugares;
     }
 
-    public Sala toSala() {
-        Sala sala = new Sala(this.nome);
-        sala.setId(this.salaId);
-        sala.setLugares(new HashSet<>(this.lugares));
-        return sala;
+    public	Sala	toSala() {
+	   Sala	sala	=	new	Sala(this.nome,	this.preco);
+       sala.setId(this.salaId);
+       sala.setLugares(new	HashSet<>(this.lugares));
+        return	sala;
+
     }
 
 }

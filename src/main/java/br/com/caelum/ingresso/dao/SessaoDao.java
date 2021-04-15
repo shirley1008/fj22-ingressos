@@ -1,33 +1,43 @@
 package br.com.caelum.ingresso.dao;
 
-import br.com.caelum.ingresso.model.Sessao;
-import org.springframework.stereotype.Repository;
+import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import java.util.List;
 
+import org.springframework.stereotype.Repository;
+
+import br.com.caelum.ingresso.model.Sala;
+import br.com.caelum.ingresso.model.Sessao;
+import br.com.caelum.ingresso.model.Filme;
 
 @Repository
 public class SessaoDao {
+	
+	@PersistenceContext
+	private EntityManager manager;
 
-    @PersistenceContext
-    private EntityManager manager;
+	public void save(Sessao sessao) {
+		manager.persist(sessao);
+	}
+	
+	public Sessao findOne(Integer id) {
+		return	manager.find(Sessao.class,	id);
+	}
+	
+	public List<Sessao> buscaSessoesDaSala(Sala sala) {
+		//String sql = "select * from Sessao where sala_id = " + sala.getId();
+		String jpql = "select s from Sessao s where s.sala = :sala";
+		
+		return manager.createQuery(jpql, Sessao.class)
+			.setParameter("sala", sala)
+			.getResultList();
+	}
 
-    public Sessao findOne(Integer id) {
-
-        return manager.find(Sessao.class, id);
-    }
-
-    public void save(Sessao sessao) {
-        manager.merge(sessao);
-    }
-
-    public List<Sessao> findAll() {
-        return manager.createQuery("select s from Sessao s", Sessao.class).getResultList();
-    }
-
-    public void delete(Integer id) {
-        manager.remove(findOne(id));
-    }
+	public List<Sessao> buscaSessoesDoFilme(Filme filme) {
+		return manager.createQuery("select s from Sessao s where s.filme = :filme", Sessao.class)
+			.setParameter("filme", filme)
+			.getResultList();
+	}
 }
+ 
